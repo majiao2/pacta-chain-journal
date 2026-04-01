@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { getHabitsByCategory, categoryInfo, type HabitCategory } from "@/data/habitsData";
+import { getHabitsByCategory, categoryInfo, type HabitCategory, type Habit } from "@/data/habitsData";
 import HabitCard from "./HabitCard";
+import CreatePactDialog from "./CreatePactDialog";
 import { motion } from "framer-motion";
 
 interface HabitPageProps {
@@ -9,6 +10,7 @@ interface HabitPageProps {
 
 export default function HabitPage({ category }: HabitPageProps) {
   const [tab, setTab] = useState<"quantity" | "time">("quantity");
+  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const info = categoryInfo[category];
   const allHabits = getHabitsByCategory(category);
   const filtered = allHabits.filter(h => h.type === tab);
@@ -53,7 +55,12 @@ export default function HabitPage({ category }: HabitPageProps) {
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((habit, i) => (
-          <HabitCard key={habit.id} habit={habit} index={i} />
+          <HabitCard
+            key={habit.id}
+            habit={habit}
+            index={i}
+            onCreatePact={(h) => setSelectedHabit(h)}
+          />
         ))}
       </div>
 
@@ -62,6 +69,12 @@ export default function HabitPage({ category }: HabitPageProps) {
           <p className="font-hand text-2xl">暂无此类习惯</p>
         </div>
       )}
+
+      <CreatePactDialog
+        habit={selectedHabit}
+        open={!!selectedHabit}
+        onOpenChange={(open) => { if (!open) setSelectedHabit(null); }}
+      />
     </div>
   );
 }
