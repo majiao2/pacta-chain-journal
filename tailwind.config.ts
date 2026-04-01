@@ -12,7 +12,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        hand: ["Caveat", "Kalam", "cursive"],
+        hand: ["Caveat", "Kalam", "ZCOOL KuaiLe", "cursive"],
         body: ["Noto Sans SC", "system-ui", "sans-serif"],
       },
       colors: {
@@ -73,8 +73,8 @@ export default {
           "50%": { transform: "translateY(-8px)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px rgba(0, 212, 255, 0.2)" },
-          "50%": { boxShadow: "0 0 40px rgba(0, 212, 255, 0.5)" },
+          "0%, 100%": { boxShadow: "0 4px 18px rgba(72, 140, 120, 0.2), 0 2px 8px rgba(140, 170, 190, 0.15)" },
+          "50%": { boxShadow: "0 6px 28px rgba(72, 140, 120, 0.32), 0 3px 12px rgba(160, 140, 180, 0.2)" },
         },
       },
       animation: {

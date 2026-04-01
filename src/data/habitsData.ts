@@ -11,12 +11,12 @@ export interface Habit {
 export type HabitCategory = "mental" | "physical" | "diet" | "happiness" | "business" | "productivity";
 
 export const categoryInfo: Record<HabitCategory, { label: string; labelEn: string; emoji: string; color: string }> = {
-  mental:       { label: "脑力与知识", labelEn: "Mental Fitness",   emoji: "🧠", color: "from-blue-400 to-cyan-400" },
-  physical:     { label: "身体健康",   labelEn: "Physical Fitness", emoji: "💪", color: "from-orange-400 to-red-400" },
-  diet:         { label: "健康与饮食", labelEn: "Health & Diet",    emoji: "🥗", color: "from-green-400 to-emerald-400" },
-  happiness:    { label: "幸福与心态", labelEn: "Happiness",        emoji: "😊", color: "from-yellow-400 to-amber-400" },
-  business:     { label: "商业与工作", labelEn: "Business",         emoji: "💼", color: "from-purple-400 to-indigo-400" },
-  productivity: { label: "生产力与创作", labelEn: "Productivity",   emoji: "🚀", color: "from-pink-400 to-rose-400" },
+  mental:       { label: "脑力与知识", labelEn: "Mental Fitness",   emoji: "🧠", color: "from-sky-200/50 to-cyan-100/40" },
+  physical:     { label: "身体健康",   labelEn: "Physical Fitness", emoji: "💪", color: "from-rose-200/50 to-orange-100/40" },
+  diet:         { label: "健康与饮食", labelEn: "Health & Diet",    emoji: "🥗", color: "from-emerald-200/45 to-teal-100/35" },
+  happiness:    { label: "幸福与心态", labelEn: "Happiness",        emoji: "😊", color: "from-amber-200/50 to-yellow-50/40" },
+  business:     { label: "商业与工作", labelEn: "Business",         emoji: "💼", color: "from-violet-200/45 to-purple-100/35" },
+  productivity: { label: "生产力与创作", labelEn: "Productivity",   emoji: "🚀", color: "from-fuchsia-200/40 to-pink-100/35" },
 };
 
 export const habits: Habit[] = [

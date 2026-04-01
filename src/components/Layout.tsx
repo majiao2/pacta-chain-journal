@@ -23,7 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-50 bg-[hsl(40_38%_98%_/0.72)] backdrop-blur-md border-b border-[hsl(var(--border)_/_0.65)] shadow-[0_1px_0_rgba(255,255,255,0.6)_inset]">
         <div className="container flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2">
             <span className="text-3xl font-hand font-bold text-foreground">心契</span>

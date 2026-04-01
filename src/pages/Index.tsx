@@ -43,13 +43,19 @@ export default function Index() {
             >
               <Link to={`/${key}`} className="block">
                 <div className="paper-card p-6 text-center group cursor-pointer">
-                  <span className="text-4xl block mb-3 group-hover:scale-110 transition-transform">
-                    {info.emoji}
-                  </span>
-                  <h3 className="font-hand text-xl font-semibold text-foreground">
-                    {info.label}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">{info.labelEn}</p>
+                  <div
+                    className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${info.color}`}
+                    aria-hidden
+                  />
+                  <div className="relative">
+                    <span className="text-4xl block mb-3 group-hover:scale-110 transition-transform duration-300">
+                      {info.emoji}
+                    </span>
+                    <h3 className="font-hand text-xl font-semibold text-foreground">
+                      {info.label}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">{info.labelEn}</p>
+                  </div>
                 </div>
               </Link>
             </motion.div>
