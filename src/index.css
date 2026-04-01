@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=ZCOOL+KuaiLe&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Long+Cang&family=Noto+Sans+SC:wght@300;400;500;600&family=Noto+Serif+SC:wght@300;400;500;600;700&family=ZCOOL+XiaoWei&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -47,8 +47,10 @@
     --cyber: 168 38% 42%;
     --cyber-glow: 195 42% 72%;
 
-    --font-hand: 'Caveat', 'Kalam', 'ZCOOL KuaiLe', cursive;
-    --font-body: 'Noto Sans SC', system-ui, sans-serif;
+    /* 手写层：行书日记感 + 柔和西文手写 + 小薇体兜底（笔画带手绘韵味） */
+    --font-hand: 'Long Cang', 'Caveat', 'ZCOOL XiaoWei', cursive;
+    /* 正文：衬线更贴近手账内页、水彩插画的文艺排版 */
+    --font-body: 'Noto Serif SC', 'Noto Sans SC', Georgia, 'Songti SC', serif;
 
     --shadow-card:
       0 2px 0 rgba(255, 255, 255, 0.85) inset,
@@ -69,6 +71,8 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
+    line-height: 1.7;
+    font-weight: 400;
     background-color: hsl(var(--background));
     background-image:
       radial-gradient(ellipse 85% 55% at 12% 18%, hsl(350 45% 92% / 0.75) 0%, transparent 55%),
@@ -84,7 +88,9 @@
   h3,
   h4 {
     font-family: var(--font-hand);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
+    font-weight: 400;
+    line-height: 1.25;
   }
 }
 

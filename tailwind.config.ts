@@ -12,8 +12,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        hand: ["Caveat", "Kalam", "ZCOOL KuaiLe", "cursive"],
-        body: ["Noto Sans SC", "system-ui", "sans-serif"],
+        hand: ["Long Cang", "Caveat", "ZCOOL XiaoWei", "cursive"],
+        body: ["Noto Serif SC", "Noto Sans SC", "Georgia", "Songti SC", "serif"],
+        sans: ["Noto Sans SC", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
