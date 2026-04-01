@@ -11,6 +11,7 @@ import Diet from "./pages/Diet";
 import Happiness from "./pages/Happiness";
 import Business from "./pages/Business";
 import Productivity from "./pages/Productivity";
+import Challenges from "./pages/Challenges";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
