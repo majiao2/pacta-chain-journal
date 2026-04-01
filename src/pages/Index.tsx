@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import RandomPicker from "@/components/RandomPicker";
+import PactaChainPanel from "@/components/PactaChainPanel";
 import { Link } from "react-router-dom";
 import { categoryInfo, type HabitCategory } from "@/data/habitsData";
 
@@ -27,6 +28,10 @@ export default function Index() {
 
       {/* Random Picker */}
       <RandomPicker />
+
+      <div className="w-full max-w-3xl">
+        <PactaChainPanel variant="compact" title="链上挑战与奖励池" />
+      </div>
 
       {/* Category Grid */}
       <div className="w-full">

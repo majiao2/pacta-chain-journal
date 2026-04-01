@@ -1,8 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { categoryInfo, type HabitCategory } from "@/data/habitsData";
-import WalletButton from "./WalletButton";
+import type { HabitCategory } from "@/data/habitsData";
+import WalletConnect from "./WalletConnect";
 import { Menu, X } from "lucide-react";
 
 const navItems: { path: string; category?: HabitCategory; label: string }[] = [
@@ -48,7 +48,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-3">
-            <WalletButton />
+            <WalletConnect />
             <button className="lg:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
               {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

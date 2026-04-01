@@ -2,6 +2,7 @@ import { useState } from "react";
 import { getHabitsByCategory, categoryInfo, type HabitCategory, type Habit } from "@/data/habitsData";
 import HabitCard from "./HabitCard";
 import CreatePactDialog from "./CreatePactDialog";
+import PactaChainPanel from "./PactaChainPanel";
 import { motion } from "framer-motion";
 
 interface HabitPageProps {
@@ -75,6 +76,10 @@ export default function HabitPage({ category }: HabitPageProps) {
         open={!!selectedHabit}
         onOpenChange={(open) => { if (!open) setSelectedHabit(null); }}
       />
+
+      <div className="mt-14 pt-8 border-t border-dashed border-border/80">
+        <PactaChainPanel variant="compact" title="我的链上挑战" />
+      </div>
     </div>
   );
 }
