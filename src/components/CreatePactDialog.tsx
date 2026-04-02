@@ -81,7 +81,9 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
         functionName: "createPact",
         args: [habit.name, freqUint, BigInt(durationDays)],
         value: parseEther(String(stake)),
-      });
+        account: address,
+        chain,
+      } as any);
       setTxHash(hash);
       toast.message("请在钱包中确认交易…");
     } catch (e) {

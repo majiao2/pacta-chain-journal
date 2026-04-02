@@ -100,7 +100,9 @@ export default function PactaChainPanel({
         abi: pactaAbi,
         functionName: "claimReward",
         args: [p.id],
-      }),
+        account: address,
+        chain,
+      } as any),
     );
   };
 
