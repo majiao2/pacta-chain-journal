@@ -87,7 +87,9 @@ export default function PactaChainPanel({
         abi: pactaAbi,
         functionName: "checkin",
         args: [p.id],
-      }),
+        account: address,
+        chain,
+      } as any),
     );
   };
 
