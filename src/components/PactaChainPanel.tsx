@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt, useConfig } from "wagmi";
 import { formatEther } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
