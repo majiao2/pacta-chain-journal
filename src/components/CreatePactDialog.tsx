@@ -35,9 +35,11 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   );
 
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const chainId = useChainId();
   const isFuji = chainId === FUJI_CHAIN_ID;
+  const config = useConfig();
+  const chain = config.chains.find((c) => c.id === chainId);
   const queryClient = useQueryClient();
 
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
