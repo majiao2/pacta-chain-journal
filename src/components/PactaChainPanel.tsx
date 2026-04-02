@@ -39,6 +39,8 @@ export default function PactaChainPanel({
   const chainId = useChainId();
   const isFuji = chainId === FUJI_CHAIN_ID;
   const queryClient = useQueryClient();
+  const config = useConfig();
+  const chain = config.chains.find((c) => c.id === chainId);
   const { rewardPoolWei, myPacts, isLoading } = usePactaChainReads();
 
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
