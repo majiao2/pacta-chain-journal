@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt, useConfig } from "wagmi";
 import { formatEther } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -39,6 +39,8 @@ export default function PactaChainPanel({
   const chainId = useChainId();
   const isFuji = chainId === FUJI_CHAIN_ID;
   const queryClient = useQueryClient();
+  const config = useConfig();
+  const chain = config.chains.find((c) => c.id === chainId);
   const { rewardPoolWei, myPacts, isLoading } = usePactaChainReads();
 
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
@@ -85,7 +87,9 @@ export default function PactaChainPanel({
         abi: pactaAbi,
         functionName: "checkin",
         args: [p.id],
-      }),
+        account: address,
+        chain,
+      } as any),
     );
   };
 
@@ -96,7 +100,9 @@ export default function PactaChainPanel({
         abi: pactaAbi,
         functionName: "claimReward",
         args: [p.id],
-      }),
+        account: address,
+        chain,
+      } as any),
     );
   };
 

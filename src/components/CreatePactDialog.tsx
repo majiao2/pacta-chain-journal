@@ -7,7 +7,7 @@ import { format, differenceInCalendarDays } from "date-fns";
 import type { Habit } from "@/data/habitsData";
 import { CalendarIcon, Zap, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt, useConfig } from "wagmi";
 import { parseEther } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -35,9 +35,11 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   );
 
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const chainId = useChainId();
   const isFuji = chainId === FUJI_CHAIN_ID;
+  const config = useConfig();
+  const chain = config.chains.find((c) => c.id === chainId);
   const queryClient = useQueryClient();
 
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
@@ -79,7 +81,9 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
         functionName: "createPact",
         args: [habit.name, freqUint, BigInt(durationDays)],
         value: parseEther(String(stake)),
-      });
+        account: address,
+        chain,
+      } as any);
       setTxHash(hash);
       toast.message("请在钱包中确认交易…");
     } catch (e) {
