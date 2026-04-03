@@ -9,11 +9,14 @@ import { CalendarIcon, Zap, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther } from "viem";
+import { avalancheFuji } from "viem/chains";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { pactaAbi } from "@/abi/pactaAbi";
 import { PACTA_ADDRESS, FREQUENCY_TO_UINT, type FrequencyKey } from "@/lib/pacta";
 import { FUJI_CHAIN_ID } from "@/lib/chains";
+import { useDemoModeStore } from "@/store/demoModeStore";
+import { usePactaDashboard } from "@/hooks/usePactaDashboard";
 
 interface CreatePactDialogProps {
   habit: Habit | null;
@@ -35,10 +38,12 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   );
 
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const isFuji = chainId === FUJI_CHAIN_ID;
+  const demoMode = useDemoModeStore((state) => state.enabled);
   const queryClient = useQueryClient();
+  const { createDemoPact, isCreatingDemoPact } = usePactaDashboard();
 
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
@@ -57,6 +62,29 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
 
   const handleCreate = async () => {
     if (!habit) return;
+    const durationDays = Math.max(
+      1,
+      differenceInCalendarDays(endDate, startDate) + 1,
+    );
+
+    if (demoMode) {
+      try {
+        await createDemoPact({
+          habit,
+          frequency,
+          stake,
+          durationDays,
+          startAt: startDate.toISOString(),
+        });
+        toast.success("演示挑战已创建");
+        onOpenChange(false);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "创建失败";
+        toast.error(msg);
+      }
+      return;
+    }
+
     if (!isConnected) {
       toast.error("请先连接 MetaMask");
       return;
@@ -65,17 +93,18 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
       toast.error("请切换到 Avalanche Fuji Testnet");
       return;
     }
-
-    const durationDays = Math.max(
-      1,
-      differenceInCalendarDays(endDate, startDate) + 1,
-    );
+    if (!address) {
+      toast.error("未获取到钱包地址");
+      return;
+    }
     const freqUint = FREQUENCY_TO_UINT[frequency];
 
     try {
       const hash = await writeContractAsync({
+        account: address,
         address: PACTA_ADDRESS,
         abi: pactaAbi,
+        chain: avalancheFuji,
         functionName: "createPact",
         args: [habit.name, freqUint, BigInt(durationDays)],
         value: parseEther(String(stake)),
@@ -90,7 +119,7 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
 
   if (!habit) return null;
 
-  const submitting = isWritePending || isConfirming;
+  const submitting = isWritePending || isConfirming || isCreatingDemoPact;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -200,19 +229,25 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
             {submitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                等待链上确认…
+                {demoMode ? "正在创建挑战…" : "等待链上确认…"}
               </>
             ) : (
               <>
                 <Zap className="w-5 h-5" />
-                质押 {stake} AVAX · 创建链上契约
+                {demoMode ? `演示模式 · 创建 ${habit.name} 挑战` : `质押 ${stake} AVAX · 创建链上契约`}
               </>
             )}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground font-body">
-            将调用合约 <span className="font-mono text-[10px] break-all">{PACTA_ADDRESS}</span>
-            的 createPact（Fuji 测试网）。
+            {demoMode ? (
+              <>当前可直接创建体验挑战，无需连接 MetaMask。</>
+            ) : (
+              <>
+                将调用合约 <span className="font-mono text-[10px] break-all">{PACTA_ADDRESS}</span>
+                的 createPact（Fuji 测试网）。
+              </>
+            )}
           </p>
         </div>
       </DialogContent>

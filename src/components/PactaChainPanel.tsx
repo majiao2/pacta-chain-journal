@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatEther } from "viem";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Check, Gift, Link2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { pactaAbi } from "@/abi/pactaAbi";
-import { PACTA_ADDRESS, UINT_TO_FREQUENCY_LABEL } from "@/lib/pacta";
-import { FUJI_CHAIN_ID } from "@/lib/chains";
-import { usePactaChainReads, type OnChainPact } from "@/hooks/usePactaChain";
+import { PACTA_ADDRESS } from "@/lib/pacta";
+import { avalancheFuji } from "@/lib/chains";
+import { usePactaDashboard, type DashboardPact } from "@/hooks/usePactaDashboard";
 import { cn } from "@/lib/utils";
 
 export type PactaChainPanelProps = {
@@ -29,78 +28,163 @@ function formatTs(sec: bigint) {
   return format(new Date(ms), "yyyy-MM-dd HH:mm", { locale: zhCN });
 }
 
+const ENCOURAGEMENT_DURATION_MS = 5000;
+
 export default function PactaChainPanel({
   variant = "default",
   title = "链上契约",
   className,
   hideRewardPool = false,
 }: PactaChainPanelProps) {
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const isFuji = chainId === FUJI_CHAIN_ID;
-  const queryClient = useQueryClient();
-  const { rewardPoolWei, myPacts, isLoading } = usePactaChainReads();
+  type PendingAction =
+    | { kind: "checkin"; pact: DashboardPact }
+    | { kind: "claim"; pact: DashboardPact };
+
+  const { address } = useAccount();
+  const {
+    wallet,
+    demoMode,
+    isConnected,
+    isFuji,
+    rewardPoolWei,
+    pacts,
+    isLoading,
+    refresh,
+    recordBackendCheckin,
+    isRecordingCheckin,
+    claimBackendReward,
+    isClaimingReward,
+  } = usePactaDashboard();
 
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
-  const [pendingOp, setPendingOp] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash: txHash,
   });
 
   useEffect(() => {
-    if (!isSuccess || !txHash) return;
-    void queryClient.invalidateQueries();
-    toast.success("交易已确认");
-    setTxHash(undefined);
-    setPendingOp(null);
-  }, [isSuccess, txHash, queryClient]);
+    if (!isSuccess || !txHash || !pendingAction) return;
+
+    void (async () => {
+      try {
+        if (pendingAction.kind === "checkin") {
+          const result = await recordBackendCheckin({
+            pactId: pendingAction.pact.id.toString(),
+            txHash,
+          });
+          toast.success(result.encouragement ?? "打卡成功", {
+            description: result.summary ?? "后端记录已同步，可继续查看阶段总结。",
+            duration: ENCOURAGEMENT_DURATION_MS,
+          });
+        } else {
+          await claimBackendReward({ pactId: pendingAction.pact.id.toString() });
+          toast.success("奖励领取交易已确认");
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "同步后端失败";
+        toast.error(msg);
+      } finally {
+        setTxHash(undefined);
+        setPendingAction(null);
+      }
+    })();
+  }, [claimBackendReward, isSuccess, pendingAction, recordBackendCheckin, refresh, txHash]);
 
   const poolDisplay =
     rewardPoolWei !== undefined
       ? `${Number.parseFloat(formatEther(rewardPoolWei)).toFixed(6)} AVAX`
       : "—";
 
-  const runTx = async (
-    label: string,
-    fn: () => Promise<`0x${string}`>,
-  ) => {
-    setPendingOp(label);
-    try {
-      const h = await fn();
-      setTxHash(h);
-      toast.message("已在钱包中提交，等待区块确认…");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "交易失败";
-      toast.error(msg);
-      setPendingOp(null);
+  const onCheckin = (p: DashboardPact) => {
+    if (demoMode) {
+      setPendingAction({ kind: "checkin", pact: p });
+      void recordBackendCheckin({
+        pactId: p.id.toString(),
+      })
+        .then((result) => {
+          toast.success(result.encouragement ?? "打卡成功", {
+            description: result.summary ?? "后端记录已生成阶段总结。",
+            duration: ENCOURAGEMENT_DURATION_MS,
+          });
+        })
+        .catch((e) => {
+          const msg = e instanceof Error ? e.message : "打卡失败";
+          toast.error(msg);
+        })
+        .finally(() => {
+          setPendingAction(null);
+        });
+      return;
     }
-  };
 
-  const onCheckin = (p: OnChainPact) => {
-    void runTx(`checkin-${p.id}`, () =>
-      writeContractAsync({
+    if (!address) {
+      toast.error("请先连接钱包");
+      return;
+    }
+    setPendingAction({ kind: "checkin", pact: p });
+    void writeContractAsync({
+        account: address,
         address: PACTA_ADDRESS,
         abi: pactaAbi,
-        functionName: "checkin",
-        args: [p.id],
-      }),
-    );
+        chain: avalancheFuji,
+        functionName: "checkin" as const,
+        args: [p.id] as const,
+      })
+      .then((hash) => {
+        setTxHash(hash);
+        toast.message("已在钱包中提交，等待区块确认…");
+      })
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : "交易失败";
+        toast.error(msg);
+        setPendingAction(null);
+      });
   };
 
-  const onClaim = (p: OnChainPact) => {
-    void runTx(`claim-${p.id}`, () =>
-      writeContractAsync({
+  const onClaim = (p: DashboardPact) => {
+    if (demoMode) {
+      setPendingAction({ kind: "claim", pact: p });
+      void claimBackendReward({ pactId: p.id.toString() })
+        .then(() => {
+          toast.success("演示奖励已领取");
+        })
+        .catch((e) => {
+          const msg = e instanceof Error ? e.message : "领取失败";
+          toast.error(msg);
+        })
+        .finally(() => {
+          setPendingAction(null);
+        });
+      return;
+    }
+
+    if (!address) {
+      toast.error("请先连接钱包");
+      return;
+    }
+    setPendingAction({ kind: "claim", pact: p });
+    void writeContractAsync({
+        account: address,
         address: PACTA_ADDRESS,
         abi: pactaAbi,
-        functionName: "claimReward",
-        args: [p.id],
-      }),
-    );
+        chain: avalancheFuji,
+        functionName: "claimReward" as const,
+        args: [p.id] as const,
+      })
+      .then((hash) => {
+        setTxHash(hash);
+        toast.message("已在钱包中提交，等待区块确认…");
+      })
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : "交易失败";
+        toast.error(msg);
+        setPendingAction(null);
+      });
   };
 
-  const busy = isWritePending || isConfirming || !!pendingOp;
+  const busy = isWritePending || isConfirming || !!pendingAction || isRecordingCheckin || isClaimingReward;
 
   return (
     <section className={cn("w-full", className)}>
@@ -133,6 +217,7 @@ export default function PactaChainPanel({
         <div className="paper-card p-4 mb-4 flex flex-wrap items-baseline gap-2">
           <span className="font-hand text-lg text-muted-foreground">全局奖励池</span>
           <span className="font-hand text-2xl font-semibold text-foreground">{poolDisplay}</span>
+          {demoMode && <span className="text-xs text-primary">演示后端</span>}
         </div>
       )}
 
@@ -154,23 +239,24 @@ export default function PactaChainPanel({
         </div>
       )}
 
-      {isConnected && isFuji && !isLoading && myPacts.length === 0 && (
+      {isConnected && isFuji && !isLoading && pacts.length === 0 && (
         <div className="paper-card p-8 text-center text-muted-foreground font-body">
-          暂无属于你的链上挑战。选择习惯并「创建挑战」即可上链。
+          {demoMode ? "还没有演示挑战。选择习惯即可直接写入后端数据。" : "暂无属于你的链上挑战。选择习惯并「创建挑战」即可上链。"}
         </div>
       )}
 
       {isConnected &&
         isFuji &&
         !isLoading &&
-        myPacts.map((p, i) => (
-          <motion.div
-            key={p.id.toString()}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className={cn("paper-card p-4 mb-3", variant === "compact" && "p-3 mb-2")}
-          >
+        pacts.map((p, i) => {
+          return (
+            <motion.div
+              key={p.id.toString()}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className={cn("paper-card p-4 mb-3", variant === "compact" && "p-3 mb-2")}
+            >
             <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
               <div>
                 <h3 className="font-hand text-xl font-semibold text-foreground">{p.habitName}</h3>
@@ -197,9 +283,7 @@ export default function PactaChainPanel({
               </div>
               <div>
                 <dt className="text-muted-foreground">频率</dt>
-                <dd className="font-medium">
-                  {UINT_TO_FREQUENCY_LABEL[p.frequency.toString()] ?? `码值 ${p.frequency}`}
-                </dd>
+                <dd className="font-medium">{p.frequencyLabel}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">开始</dt>
@@ -214,6 +298,22 @@ export default function PactaChainPanel({
                 <dd className="font-medium">{p.durationDays.toString()} 天</dd>
               </div>
             </dl>
+
+            {p.summary && (
+              <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 mb-4">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-primary mb-2 font-medium">
+                  <span>后端总结</span>
+                  <span>·</span>
+                  <span>累计 {p.checkinCount} 次</span>
+                  <span>·</span>
+                  <span>连续 {p.currentStreak} 天</span>
+                </div>
+                <p className="text-sm text-foreground leading-6">{p.summary}</p>
+                {p.latestEncouragement && (
+                  <p className="text-sm text-primary/90 mt-2">“{p.latestEncouragement}”</p>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2">
               <Button
@@ -232,19 +332,20 @@ export default function PactaChainPanel({
                 variant="secondary"
                 size="sm"
                 className="font-hand flex-1 min-w-[7rem] border border-border"
-                disabled={busy}
+                disabled={busy || p.rewardClaimed}
                 onClick={() => onClaim(p)}
               >
                 <Gift className="w-4 h-4" />
-                领取奖励
+                {p.rewardClaimed ? "已领取" : "领取奖励"}
               </Button>
             </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
 
-      {address && isFuji && !isLoading && myPacts.length > 0 && (
+      {wallet && isFuji && !isLoading && pacts.length > 0 && (
         <p className="text-xs text-muted-foreground text-center mt-2 font-sans">
-          钱包 {address.slice(0, 6)}… 共 {myPacts.length} 条链上契约
+          钱包 {wallet.slice(0, 6)}… 共 {pacts.length} 条{demoMode ? "演示" : "链上"}契约
         </p>
       )}
     </section>
