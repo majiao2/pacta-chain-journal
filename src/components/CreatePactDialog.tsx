@@ -73,6 +73,7 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
       differenceInCalendarDays(endDate, startDate) + 1,
     );
     const freqUint = FREQUENCY_TO_UINT[frequency];
+    const totalStake = stake * durationDays;
 
     try {
       const hash = await writeContractAsync({
@@ -80,7 +81,7 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
         abi: pactaAbi,
         functionName: "createPact",
         args: [habit.name, freqUint, BigInt(durationDays)],
-        value: parseEther(String(stake)),
+        value: parseEther(totalStake.toFixed(18)),
         account: address,
         chain,
       } as any);
@@ -175,9 +176,9 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
           </div>
 
           <div>
-            <label className="font-hand text-lg text-foreground block mb-2">质押金额 (AVAX)</label>
+            <label className="font-hand text-lg text-foreground block mb-2">每日质押 (AVAX)</label>
             <div className="flex gap-2">
-              {[0.05, 0.1, 0.5, 1.0].map((amount) => (
+              {[0.01, 0.05, 0.1, 0.5].map((amount) => (
                 <button
                   key={amount}
                   type="button"
@@ -192,6 +193,22 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
                   {amount}
                 </button>
               ))}
+            </div>
+            <div className="mt-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex justify-between text-sm font-body">
+                <span className="text-muted-foreground">每日质押</span>
+                <span className="text-foreground font-medium">{stake} AVAX</span>
+              </div>
+              <div className="flex justify-between text-sm font-body mt-1">
+                <span className="text-muted-foreground">挑战天数</span>
+                <span className="text-foreground font-medium">{Math.max(1, differenceInCalendarDays(endDate, startDate) + 1)} 天</span>
+              </div>
+              <div className="border-t border-border mt-2 pt-2 flex justify-between font-hand text-lg">
+                <span className="text-foreground">总质押</span>
+                <span className="text-primary font-bold">
+                  {(stake * Math.max(1, differenceInCalendarDays(endDate, startDate) + 1)).toFixed(4)} AVAX
+                </span>
+              </div>
             </div>
           </div>
 
@@ -209,14 +226,13 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
             ) : (
               <>
                 <Zap className="w-5 h-5" />
-                质押 {stake} AVAX · 创建链上契约
+                质押 {(stake * Math.max(1, differenceInCalendarDays(endDate, startDate) + 1)).toFixed(4)} AVAX · 创建挑战
               </>
             )}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground font-body">
-            将调用合约 <span className="font-mono text-[10px] break-all">{PACTA_ADDRESS}</span>
-            的 createPact（Fuji 测试网）。
+            总质押 = 每日 {stake} × {Math.max(1, differenceInCalendarDays(endDate, startDate) + 1)} 天，全部进入奖励池。完成后返还质押 + 额外奖励。
           </p>
         </div>
       </DialogContent>

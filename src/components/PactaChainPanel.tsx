@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt, useConfig } from "wagmi";
 import { formatEther } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
-import { Check, Gift, Link2, Loader2 } from "lucide-react";
+import { Check, Gift, Link2, Loader2, Flame, CalendarCheck, Clock, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { pactaAbi } from "@/abi/pactaAbi";
 import { PACTA_ADDRESS, UINT_TO_FREQUENCY_LABEL } from "@/lib/pacta";
 import { FUJI_CHAIN_ID } from "@/lib/chains";
@@ -18,15 +17,19 @@ export type PactaChainPanelProps = {
   variant?: "default" | "compact";
   title?: string;
   className?: string;
-  /** 为 true 时不展示全局奖励池卡片（例如在「我的挑战」页由统计栏展示） */
   hideRewardPool?: boolean;
 };
 
-function formatTs(sec: bigint) {
-  if (sec === 0n) return "暂无";
-  const ms = Number(sec) * 1000;
-  if (!Number.isFinite(ms)) return "—";
-  return format(new Date(ms), "yyyy-MM-dd HH:mm", { locale: zhCN });
+function isCheckedToday(lastCheckin: bigint): boolean {
+  if (lastCheckin === 0n) return false;
+  const lastMs = Number(lastCheckin) * 1000;
+  const now = new Date();
+  const last = new Date(lastMs);
+  return (
+    last.getFullYear() === now.getFullYear() &&
+    last.getMonth() === now.getMonth() &&
+    last.getDate() === now.getDate()
+  );
 }
 
 export default function PactaChainPanel({
@@ -61,13 +64,10 @@ export default function PactaChainPanel({
 
   const poolDisplay =
     rewardPoolWei !== undefined
-      ? `${Number.parseFloat(formatEther(rewardPoolWei)).toFixed(6)} AVAX`
+      ? `${Number.parseFloat(formatEther(rewardPoolWei)).toFixed(4)} AVAX`
       : "—";
 
-  const runTx = async (
-    label: string,
-    fn: () => Promise<`0x${string}`>,
-  ) => {
+  const runTx = async (label: string, fn: () => Promise<`0x${string}`>) => {
     setPendingOp(label);
     try {
       const h = await fn();
@@ -169,84 +169,138 @@ export default function PactaChainPanel({
       {isConnected &&
         isFuji &&
         !isLoading &&
-        myPacts.map((p, i) => (
-          <motion.div
-            key={p.id.toString()}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className={cn("paper-card p-4 mb-3", variant === "compact" && "p-3 mb-2")}
-          >
-            <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-              <div>
-                <h3 className="font-hand text-xl font-semibold text-foreground">{p.habitName}</h3>
-                <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                  Pact #{p.id.toString()}
-                </p>
+        myPacts.map((p, i) => {
+          const total = Number(p.durationDays);
+          const checked = Number(p.checkinCount);
+          const remaining = Math.max(0, total - checked);
+          const progress = total > 0 ? Math.round((checked / total) * 100) : 0;
+          const todayDone = isCheckedToday(p.lastCheckin);
+          const streak = Number(p.streak);
+          const stakeDisplay = Number.parseFloat(formatEther(p.stakeAmount)).toFixed(4);
+
+          return (
+            <motion.div
+              key={p.id.toString()}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className={cn("paper-card p-5 mb-4", variant === "compact" && "p-4 mb-3")}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="font-hand text-2xl font-semibold text-foreground">
+                    {p.habitName}
+                  </h3>
+                  <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                    Pact #{p.id.toString()} · {UINT_TO_FREQUENCY_LABEL[p.frequency.toString()] ?? "自定义"}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "text-xs px-2.5 py-1 rounded-full border font-sans whitespace-nowrap",
+                    p.completed
+                      ? p.claimed
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-amber-400/40 bg-amber-50 text-amber-700"
+                      : "border-border bg-muted/40 text-muted-foreground",
+                  )}
+                >
+                  {p.completed ? (p.claimed ? "已领取 ✅" : "已完成 🎉") : "进行中"}
+                </span>
               </div>
-              <span
-                className={cn(
-                  "text-xs px-2 py-1 rounded-full border font-sans",
-                  p.completed
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border bg-muted/40 text-muted-foreground",
+
+              {/* Progress bar */}
+              <div className="mb-4">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1.5 font-body">
+                  <span>完成进度</span>
+                  <span className="font-medium text-foreground">{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-3" />
+              </div>
+
+              {/* 4 stats */}
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                <div className="text-center p-2 rounded-lg bg-muted/30 border border-border/50">
+                  <Flame className="w-4 h-4 mx-auto text-destructive mb-1" />
+                  <p className="font-hand text-xl font-bold text-foreground">{streak}</p>
+                  <p className="text-[10px] text-muted-foreground font-body">连续</p>
+                </div>
+                <div className="text-center p-2 rounded-lg bg-muted/30 border border-border/50">
+                  <CalendarCheck className="w-4 h-4 mx-auto text-primary mb-1" />
+                  <p className="font-hand text-xl font-bold text-foreground">{checked}</p>
+                  <p className="text-[10px] text-muted-foreground font-body">已打卡</p>
+                </div>
+                <div className="text-center p-2 rounded-lg bg-muted/30 border border-border/50">
+                  <Clock className="w-4 h-4 mx-auto text-secondary mb-1" />
+                  <p className="font-hand text-xl font-bold text-foreground">{remaining}</p>
+                  <p className="text-[10px] text-muted-foreground font-body">剩余天</p>
+                </div>
+                <div className="text-center p-2 rounded-lg bg-muted/30 border border-border/50">
+                  <Coins className="w-4 h-4 mx-auto text-amber-500 mb-1" />
+                  <p className="font-hand text-lg font-bold text-foreground">{stakeDisplay}</p>
+                  <p className="text-[10px] text-muted-foreground font-body">AVAX</p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap gap-2">
+                {!p.completed ? (
+                  <Button
+                    type="button"
+                    variant={todayDone ? "secondary" : "cyber"}
+                    size="sm"
+                    className="font-hand flex-1 min-w-[8rem]"
+                    disabled={busy || todayDone}
+                    onClick={() => onCheckin(p)}
+                  >
+                    {pendingOp === `checkin-${p.id}` ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        确认中…
+                      </>
+                    ) : todayDone ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        今日已打卡 ✓
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        打卡
+                      </>
+                    )}
+                  </Button>
+                ) : !p.claimed ? (
+                  <Button
+                    type="button"
+                    variant="cyber"
+                    size="sm"
+                    className="font-hand flex-1 min-w-[8rem]"
+                    disabled={busy}
+                    onClick={() => onClaim(p)}
+                  >
+                    {pendingOp === `claim-${p.id}` ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        领取中…
+                      </>
+                    ) : (
+                      <>
+                        <Gift className="w-4 h-4" />
+                        领取质押 + 奖励
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <div className="flex-1 text-center py-2 text-sm text-primary font-hand">
+                    🎊 奖励已到账
+                  </div>
                 )}
-              >
-                {p.completed ? "已完成" : "进行中"}
-              </span>
-            </div>
-
-            <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm font-body mb-4">
-              <div>
-                <dt className="text-muted-foreground">质押</dt>
-                <dd className="font-medium">{formatEther(p.stakeAmount)} AVAX</dd>
               </div>
-              <div>
-                <dt className="text-muted-foreground">频率</dt>
-                <dd className="font-medium">
-                  {UINT_TO_FREQUENCY_LABEL[p.frequency.toString()] ?? `码值 ${p.frequency}`}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">开始</dt>
-                <dd className="font-medium text-xs sm:text-sm">{formatTs(p.startTime)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">上次打卡</dt>
-                <dd className="font-medium text-xs sm:text-sm">{formatTs(p.lastCheckin)}</dd>
-              </div>
-              <div className="col-span-2">
-                <dt className="text-muted-foreground">持续天数（合约）</dt>
-                <dd className="font-medium">{p.durationDays.toString()} 天</dd>
-              </div>
-            </dl>
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="cyber"
-                size="sm"
-                className="font-hand flex-1 min-w-[7rem]"
-                disabled={busy || p.completed}
-                onClick={() => onCheckin(p)}
-              >
-                <Check className="w-4 h-4" />
-                打卡
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="font-hand flex-1 min-w-[7rem] border border-border"
-                disabled={busy}
-                onClick={() => onClaim(p)}
-              >
-                <Gift className="w-4 h-4" />
-                领取奖励
-              </Button>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
 
       {address && isFuji && !isLoading && myPacts.length > 0 && (
         <p className="text-xs text-muted-foreground text-center mt-2 font-sans">
