@@ -1,4 +1,4 @@
-/** Pacta 合约 ABI（读写所需子集，与部署 ABI 一致） */
+/** Pacta V2 合约 ABI */
 export const pactaAbi = [
   {
     inputs: [],
@@ -28,6 +28,9 @@ export const pactaAbi = [
           { internalType: "uint256", name: "lastCheckin", type: "uint256" },
           { internalType: "uint256", name: "durationDays", type: "uint256" },
           { internalType: "bool", name: "completed", type: "bool" },
+          { internalType: "uint256", name: "checkinCount", type: "uint256" },
+          { internalType: "uint256", name: "streak", type: "uint256" },
+          { internalType: "bool", name: "claimed", type: "bool" },
         ],
         internalType: "struct Pacta.Pact",
         name: "",
