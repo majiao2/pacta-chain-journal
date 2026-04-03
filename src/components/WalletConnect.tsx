@@ -12,12 +12,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
 import { cn } from "@/lib/utils";
-import { useDemoModeStore } from "@/store/demoModeStore";
 
 export default function WalletConnect({ className }: { className?: string }) {
-  const demoMode = useDemoModeStore((state) => state.enabled);
-  const demoWallet = useDemoModeStore((state) => state.wallet);
-  const setDemoMode = useDemoModeStore((state) => state.setEnabled);
   const {
     shortAddress,
     balanceAvax,
@@ -56,28 +52,7 @@ export default function WalletConnect({ className }: { className?: string }) {
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {demoMode ? (
-        <>
-          <div className="paper-card px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm max-w-[min(100%,20rem)]">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary/80 shrink-0" aria-hidden />
-              <span className="font-hand text-foreground">演示模式</span>
-            </div>
-            <span className="font-mono text-muted-foreground">
-              {demoWallet.slice(0, 6)}…{demoWallet.slice(-4)}
-            </span>
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="font-hand text-base border border-border"
-            onClick={() => setDemoMode(false)}
-          >
-            连接真实钱包
-          </Button>
-        </>
-      ) : isConnected && isFuji && shortAddress ? (
+      {isConnected && isFuji && shortAddress ? (
         <div className="paper-card px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm max-w-[min(100%,20rem)]">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary/80 shrink-0" aria-hidden />
@@ -110,18 +85,6 @@ export default function WalletConnect({ className }: { className?: string }) {
         >
           <Wallet className="w-4 h-4" />
           {isConnecting ? "连接中…" : "连接 MetaMask"}
-        </Button>
-      )}
-
-      {!demoMode && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="font-hand text-base"
-          onClick={() => setDemoMode(true)}
-        >
-          跳过验证
         </Button>
       )}
 

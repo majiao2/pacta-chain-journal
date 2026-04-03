@@ -3,12 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getRandomHabit, type Habit } from "@/data/habitsData";
 import { Button } from "@/components/ui/button";
 import { Shuffle, Zap } from "lucide-react";
-import CreatePactDialog from "@/components/CreatePactDialog";
 
 export default function RandomPicker() {
   const [habit, setHabit] = useState<Habit | null>(null);
   const [spinning, setSpinning] = useState(false);
-  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
 
   const pick = useCallback(() => {
     setSpinning(true);
@@ -55,23 +53,13 @@ export default function RandomPicker() {
               <span>·</span>
               <span className="text-primary font-semibold">{habit.defaultStake} AVAX</span>
             </div>
-            <Button variant="cyber" className="w-full" onClick={() => setSelectedHabit(habit)}>
+            <Button variant="cyber" className="w-full">
               <Zap className="w-4 h-4" />
               创建挑战
             </Button>
           </motion.div>
         )}
       </AnimatePresence>
-
-      <CreatePactDialog
-        habit={selectedHabit}
-        open={!!selectedHabit}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedHabit(null);
-          }
-        }}
-      />
     </div>
   );
 }
