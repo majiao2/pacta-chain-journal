@@ -1,7 +1,7 @@
 export type FrequencyKey = "daily" | "weekdays" | "custom";
 
 /** 已部署的 Pacta 合约 */
-export const PACTA_ADDRESS = "0xD7ACd2a9FD159E69Bb102A1ca21C9a3e3A5F771B" as const;
+export const PACTA_ADDRESS = "0x1326d62Bef1EB40de1419b337E53dfc7497464b1" as const;
 
 /** 与合约约定：0 每天 / 1 工作日 / 2 自定义（若链上不同请改此处） */
 export const FREQUENCY_TO_UINT: Record<FrequencyKey, bigint> = {

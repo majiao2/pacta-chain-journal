@@ -28,7 +28,7 @@ export default function Challenges() {
     () => pacts.reduce((acc, p) => acc + parseFloat(formatEther(p.stakeAmount)), 0),
     [pacts],
   );
-  const withCheckin = pacts.filter((p) => p.checkinCount > 0).length;
+  const withCheckin = myPacts.filter((p) => Number(p.checkinCount) > 0).length;
 
   const poolLabel =
     rewardPoolWei !== undefined

@@ -14,6 +14,9 @@ export type OnChainPact = {
   lastCheckin: bigint;
   durationDays: bigint;
   completed: boolean;
+  checkinCount: bigint;
+  streak: bigint;
+  claimed: boolean;
 };
 
 function parsePactRow(result: unknown): Omit<OnChainPact, "id"> | null {
@@ -30,6 +33,9 @@ function parsePactRow(result: unknown): Omit<OnChainPact, "id"> | null {
     lastCheckin: BigInt(r.lastCheckin?.toString() ?? 0),
     durationDays: BigInt(r.durationDays?.toString() ?? 0),
     completed: Boolean(r.completed),
+    checkinCount: BigInt(r.checkinCount?.toString() ?? 0),
+    streak: BigInt(r.streak?.toString() ?? 0),
+    claimed: Boolean(r.claimed),
   };
 }
 
