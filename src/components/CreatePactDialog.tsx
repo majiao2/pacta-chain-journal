@@ -73,6 +73,7 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
       differenceInCalendarDays(endDate, startDate) + 1,
     );
     const freqUint = FREQUENCY_TO_UINT[frequency];
+    const totalStake = stake * durationDays;
 
     try {
       const hash = await writeContractAsync({
@@ -80,7 +81,7 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
         abi: pactaAbi,
         functionName: "createPact",
         args: [habit.name, freqUint, BigInt(durationDays)],
-        value: parseEther(String(stake)),
+        value: parseEther(totalStake.toFixed(18)),
         account: address,
         chain,
       } as any);
