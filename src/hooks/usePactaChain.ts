@@ -39,19 +39,21 @@ function parsePactRow(result: unknown): Omit<OnChainPact, "id"> | null {
   };
 }
 
-export function usePactaChainReads() {
+export function usePactaChainReads(enabled = true) {
   const { address } = useAccount();
 
   const { data: counter, isFetched: counterFetched } = useReadContract({
     address: PACTA_ADDRESS,
     abi: pactaAbi,
     functionName: "pactCounter",
+    query: { enabled },
   });
 
   const { data: rewardPoolWei } = useReadContract({
     address: PACTA_ADDRESS,
     abi: pactaAbi,
     functionName: "getRewardPool",
+    query: { enabled },
   });
 
   const count = counter !== undefined ? Number(counter) : 0;
@@ -75,7 +77,7 @@ export function usePactaChainReads() {
     isFetching: loading0,
   } = useReadContracts({
     contracts: contracts0,
-    query: { enabled: counterFetched && count > 0 },
+    query: { enabled: enabled && counterFetched && count > 0 },
   });
 
   const hasAnyUser0 = useMemo(() => {
@@ -104,7 +106,7 @@ export function usePactaChainReads() {
 
   const { data: batch1, isFetching: loading1 } = useReadContracts({
     contracts: contracts1,
-    query: { enabled: useOneBased },
+    query: { enabled: enabled && useOneBased },
   });
 
   const effectiveBatch = useOneBased ? batch1 : batch0;
@@ -133,7 +135,7 @@ export function usePactaChainReads() {
   }, [allPacts, address]);
 
   const isLoading =
-    !counterFetched ||
+    (enabled && !counterFetched) ||
     (count > 0 && (!fetched0 || loading0)) ||
     (useOneBased && loading1);
 

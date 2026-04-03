@@ -9,11 +9,14 @@ import { CalendarIcon, Zap, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt, useConfig } from "wagmi";
 import { parseEther } from "viem";
+import { avalancheFuji } from "viem/chains";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { pactaAbi } from "@/abi/pactaAbi";
 import { PACTA_ADDRESS, FREQUENCY_TO_UINT, type FrequencyKey } from "@/lib/pacta";
 import { FUJI_CHAIN_ID } from "@/lib/chains";
+import { useDemoModeStore } from "@/store/demoModeStore";
+import { usePactaDashboard } from "@/hooks/usePactaDashboard";
 
 interface CreatePactDialogProps {
   habit: Habit | null;
@@ -41,6 +44,7 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
   const config = useConfig();
   const chain = config.chains.find((c) => c.id === chainId);
   const queryClient = useQueryClient();
+  const { createDemoPact, isCreatingDemoPact } = usePactaDashboard();
 
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
@@ -59,6 +63,29 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
 
   const handleCreate = async () => {
     if (!habit) return;
+    const durationDays = Math.max(
+      1,
+      differenceInCalendarDays(endDate, startDate) + 1,
+    );
+
+    if (demoMode) {
+      try {
+        await createDemoPact({
+          habit,
+          frequency,
+          stake,
+          durationDays,
+          startAt: startDate.toISOString(),
+        });
+        toast.success("演示挑战已创建");
+        onOpenChange(false);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "创建失败";
+        toast.error(msg);
+      }
+      return;
+    }
+
     if (!isConnected) {
       toast.error("请先连接 MetaMask");
       return;
@@ -67,18 +94,19 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
       toast.error("请切换到 Avalanche Fuji Testnet");
       return;
     }
-
-    const durationDays = Math.max(
-      1,
-      differenceInCalendarDays(endDate, startDate) + 1,
-    );
+    if (!address) {
+      toast.error("未获取到钱包地址");
+      return;
+    }
     const freqUint = FREQUENCY_TO_UINT[frequency];
     const totalStake = stake * durationDays;
 
     try {
       const hash = await writeContractAsync({
+        account: address,
         address: PACTA_ADDRESS,
         abi: pactaAbi,
+        chain: avalancheFuji,
         functionName: "createPact",
         args: [habit.name, freqUint, BigInt(durationDays)],
         value: parseEther(totalStake.toFixed(18)),
@@ -95,7 +123,7 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
 
   if (!habit) return null;
 
-  const submitting = isWritePending || isConfirming;
+  const submitting = isWritePending || isConfirming || isCreatingDemoPact;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -221,7 +249,7 @@ export default function CreatePactDialog({ habit, open, onOpenChange }: CreatePa
             {submitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                等待链上确认…
+                {demoMode ? "正在创建挑战…" : "等待链上确认…"}
               </>
             ) : (
               <>

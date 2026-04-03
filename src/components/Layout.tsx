@@ -14,6 +14,7 @@ const navItems: { path: string; category?: HabitCategory; label: string }[] = [
   { path: "/business", category: "business", label: "💼 商业" },
   { path: "/productivity", category: "productivity", label: "🚀 生产力" },
   { path: "/challenges", label: "📅 我的挑战" },
+  { path: "/overview", label: "📈 用户总览" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

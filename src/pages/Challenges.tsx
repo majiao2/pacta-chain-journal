@@ -9,30 +9,24 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CalendarDays } from "lucide-react";
 import PactaChainPanel from "@/components/PactaChainPanel";
-import { usePactaChainReads } from "@/hooks/usePactaChain";
-import { useAccount, useChainId } from "wagmi";
-import { FUJI_CHAIN_ID } from "@/lib/chains";
+import { usePactaDashboard } from "@/hooks/usePactaDashboard";
 
 export default function Challenges() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const { isConnected } = useAccount();
-  const chainId = useChainId();
-  const isFuji = chainId === FUJI_CHAIN_ID;
-
-  const { myPacts, rewardPoolWei, isLoading } = usePactaChainReads();
+  const { demoMode, isConnected, isFuji, pacts, rewardPoolWei, isLoading } = usePactaDashboard();
 
   const checkedDays = useMemo(
     () =>
-      myPacts
+      pacts
         .filter((p) => p.lastCheckin > 0n)
         .map((p) => new Date(Number(p.lastCheckin) * 1000)),
-    [myPacts],
+    [pacts],
   );
 
-  const activePacts = myPacts.filter((p) => !p.completed);
+  const activePacts = pacts.filter((p) => !p.completed);
   const totalStaked = useMemo(
-    () => myPacts.reduce((acc, p) => acc + parseFloat(formatEther(p.stakeAmount)), 0),
-    [myPacts],
+    () => pacts.reduce((acc, p) => acc + parseFloat(formatEther(p.stakeAmount)), 0),
+    [pacts],
   );
   const withCheckin = myPacts.filter((p) => Number(p.checkinCount) > 0).length;
 
@@ -53,7 +47,9 @@ export default function Challenges() {
         <h1 className="text-5xl font-hand font-bold text-foreground flex items-center gap-3">
           📅 我的挑战
         </h1>
-        <p className="text-muted-foreground mt-1">链上契约 · Avalanche Fuji</p>
+        <p className="text-muted-foreground mt-1">
+          {demoMode ? "演示后端数据 · 已跳过 MetaMask 校验" : "链上契约 · Avalanche Fuji"}
+        </p>
       </motion.div>
 
       <motion.div
@@ -112,7 +108,9 @@ export default function Challenges() {
               最近打卡日
             </h2>
             <p className="text-xs text-muted-foreground mb-3 font-body">
-              链上仅保存每条契约的「上次打卡时间」，高亮为各契约最近一次打卡所在日期。
+              {demoMode
+                ? "演示模式会把每次打卡完整写入后端数据，并高亮最近一次打卡日期。"
+                : "链上仅保存每条契约的「上次打卡时间」，高亮为各契约最近一次打卡所在日期。"}
             </p>
             <Calendar
               mode="single"
@@ -143,16 +141,20 @@ export default function Challenges() {
         </motion.div>
 
         <div className="lg:col-span-2 space-y-4">
-          {isConnected && isFuji && !isLoading && myPacts.length === 0 ? (
+          {isConnected && isFuji && !isLoading && pacts.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="paper-card p-12 text-center"
             >
               <span className="text-6xl block mb-4">📝</span>
-              <h3 className="font-hand text-3xl font-bold text-foreground mb-2">还没有链上挑战</h3>
+              <h3 className="font-hand text-3xl font-bold text-foreground mb-2">
+                {demoMode ? "还没有演示挑战" : "还没有链上挑战"}
+              </h3>
               <p className="text-muted-foreground mb-6 font-body">
-                在首页或习惯页选择微习惯，质押 AVAX 创建契约。
+                {demoMode
+                  ? "在首页或习惯页选择微习惯，立即写入后端数据开始演示。"
+                  : "在首页或习惯页选择微习惯，质押 AVAX 创建契约。"}
               </p>
               <Button variant="cyber" size="lg" className="font-hand" asChild>
                 <Link to="/">浏览习惯</Link>
@@ -160,7 +162,7 @@ export default function Challenges() {
             </motion.div>
           ) : null}
 
-          {(myPacts.length > 0 || !isConnected || !isFuji || isLoading) && (
+          {(pacts.length > 0 || !isConnected || !isFuji || isLoading) && (
             <PactaChainPanel
               title="挑战详情与操作"
               hideRewardPool
